@@ -1,0 +1,45 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  color: #2c3242;
+  font-family: sans-serif;
+}
+
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+a {
+  text-decoration: none;
+}
+.cross {
+  position: absolute;
+  width: 1em;
+  height: 1em;
+  top: 1em;
+  right: 3%;
+  z-index: 13;
+  cursor: pointer;
+}
+
+.cross:before,
+.cross:after {
+  content: "";
+  position: absolute;
+  right: 5px;
+  height: 13px;
+  width: 1px;
+  background-color: black;
+}
+
+.cross:before {
+  transform: rotate(45deg);
+}
+
+.cross:after {
+  transform: rotate(-45deg);
+}

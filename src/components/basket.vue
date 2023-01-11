@@ -1,25 +1,120 @@
 <template>
-    <div>
-        <div v-for="pos of positions" :key="pos"></div>
+  <div class="wrapper">
+    <div class="main">
+      <div class="main__head">
+        <h1>Ваша корзина</h1>
+        <div class="main__head__subheader">
+          <span>{{ $t("{} товар", positions.length, "first") }}</span>
+          <button
+            @click="clear()"
+            :disabled="empty"
+            class="main__head__subheader__btn"
+          >
+            Очистить корзину
+          </button>
+        </div>
+      </div>
+      <div class="main__items">
+        <div
+          v-for="pos of positions"
+          :key="pos.product.articul"
+          class="main__items__item"
+        >
+          <div class="cross" @click="deletePos(pos)"></div>
+          <div class="main__items__item__image">
+            <img
+              :src="pos.product.imageSrc"
+              class="main__items__item__image__img"
+            />
+          </div>
+          <div class="main__items__item__data">
+            <h2>{{ pos.product.title }}</h2>
+            <p>{{ pos.product.description }}</p>
+            <p class="main__items__item__data__art">
+              Артикул: {{ pos.product.articul }}
+            </p>
+          </div>
+          <div class="main__items__item__count">
+            <!-- Инкремент / декремент можно было выделить в отдельный компонент. -->
+            <div class="main__items__item__count__plus">
+              <button @click="changeCount(pos, -1)" :disabled="pos.count == 1">
+                &minus;
+              </button>
+              <span>{{ pos.count }}</span>
+              <button @click="changeCount(pos, 1)">&plus;</button>
+            </div>
+            <div class="main__items__item__count__tip" v-if="pos.count > 1">
+              {{ pos.product.price }} / шт.
+            </div>
+          </div>
+          <div class="main__items__item__sum">
+            {{ (pos.count * pos.product.price).toLocaleString() }}
+          </div>
+        </div>
+      </div>
+      <div class="installation">
+        <label class="installation__label">
+          <input type="checkbox" v-model="needHelp" />
+          <div class="installation__label__tip">
+            <h3>Установка</h3>
+            <p>
+              Отметьте, если Вам необходима консультация профессионала по
+              монтажу выбранных товаров.
+            </p>
+          </div>
+        </label>
+      </div>
     </div>
+    <div class="total">
+      <h2>Итого</h2>
+      <div class="total__table">
+        <div>
+          Сумма заказа <span>{{ sum.toLocaleString() }} р</span>
+        </div>
+        <div>
+          Количество <span>{{ pieces }} шт</span>
+        </div>
+        <div>
+          Установка <span>{{ needHelp ? "Да" : "Нет" }}</span>
+        </div>
+      </div>
+      <div class="total__final">
+        Стоимость товаров <span>{{ sum.toLocaleString() }} р</span>
+      </div>
+      <button
+        class="total__button total__button_main"
+        @click="submit"
+        :disabled="empty"
+      >
+        Оформить заказ
+      </button>
+      <button class="total__button" :disabled="empty">
+        Купить в один клик
+      </button>
+    </div>
+  </div>
 </template>
 <script lang="ts">
 export {};
-const Vue = require("vue/dist/vue.js");
-const { Prop, Component } = require("vue-property-decorator");
-type product = {
-  title: string;
-  description: string;
-  articul: string;
-  price: number;
-};
+import Vue from "vue";
+import { Component, Prop, Watch } from "vue-property-decorator";
+
+import { product, store } from "../types";
+
 type position = { product: product; count: number };
 @Component
-class Basket extends Vue {
-  @Prop(Array)
-  goods!: product[];
+export default class Basket extends Vue {
+  $store!: store;
+  $t!: Function;
 
+  @Prop(Array)
+  goods_!: product[];
+
+  get goods() {
+    return this.goods_ || this.$store.state.basket; //компонент можно будет использовать как с пропсами, так и с store.
+  }
   positions: position[] = [];
+  needHelp = false; //консультация по установке
   get sum() {
     return this.positions.reduce(
       (a, { product: { price }, count }) => a + count * price,
@@ -29,12 +124,36 @@ class Basket extends Vue {
   get pieces() {
     return this.positions.reduce((a, { count }) => a + count, 0);
   }
-  clear() {
-    this.positions.length = 0;
+  get empty() {
+    return !this.positions.length;
   }
-  submit() {}
-  deletePos(pos: position){
-    this.positions.splice(this.positions.indexOf(pos), 1)
+  clear() {
+    this.positions.splice(0, this.positions.length);
+  }
+  async submit() {
+    const res: Response = await fetch("/api/order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json;charset=utf-8",
+      },
+      body: JSON.stringify({
+        goods: this.positions.map(({ count, product }) => ({
+          count,
+          id: product.articul,
+        })),
+        installation: this.needHelp,
+      }),
+    });
+    if (res.ok) {
+      alert("Скоро вы будете перенаправлены на страницу оплаты."); //тут бы всплывающий попап прикрутить
+      this.clear();
+    } else {
+      alert("Что-то пошло не так. Попробуйте оплатить еще раз...");
+    }
+  }
+  deletePos(pos: position) {
+    this.positions.splice(this.positions.indexOf(pos), 1);
+    this.$store.commit("deletePos", pos);
   }
   changeCount(position: position, increment: 1 | -1) {
     if (position.count == 1 && increment == -1) {
@@ -42,6 +161,134 @@ class Basket extends Vue {
     }
     position.count += increment;
   }
+
+  @Watch("goods.length")
+  update(val: number, oldval: number) {
+    if (val > oldval) {
+      const newItems = this.goods.filter(
+        (product) => !this.positions.some((pos) => pos.product == product)
+      );
+      this.positions.push(
+        ...newItems.map((product) => ({ product, count: 1 }))
+      );
+    }
+  }
 }
-module.exports = Basket;
 </script>
+<style scoped src="../assets/css/main.css"></style>
+<style scoped lang="scss">
+/* for pure css
+* {
+  --main-border-color: silver;
+  --main-color: #0069b4;
+  --soft-color: #797B86;
+}
+*/
+$main-border-color: silver;
+$main-color: #0069b4;
+$soft-color: #797b86;
+@at-root .wrapper {
+  display: grid;
+  grid-template-areas:
+    "header header header"
+    "main main total"
+    "slider slider slider";
+}
+.main {
+  grid-area: main;
+}
+.main__head {
+  display: flex;
+  align-items: flex-end;
+}
+.main__head__subheader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-grow: 1;
+  margin-left: 1em;
+}
+.main__head__subheader__btn {
+  border: none;
+}
+.main__items__item {
+  display: flex;
+  align-items: center;
+  margin: 1em 0;
+  padding: 1em;
+  position: relative;
+  border: thin solid silver;
+  > div {
+    flex-grow: 1;
+  }
+}
+.main__items__item__data {
+  h2,
+  p {
+    padding: 0.5em;
+  }
+}
+.main__items__item__image {
+  width: 10%;
+}
+.main__items__item__image__img {
+  width: 100%;
+  border: thin solid grey;
+}
+.main__items__item__sum {
+  font-weight: bold;
+}
+.main__items__item__data__art {
+  color: $soft-color;
+}
+.main__items__item__count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.main__items__item__count__plus button {
+  border: none;
+  margin: 0 1em;
+}
+.installation {
+  margin: 4vh 0;
+}
+.installation__label {
+  display: flex;
+}
+.installation__label__tip {
+    margin-left: 2em;
+}
+.total {
+  grid-area: total;
+  margin: 0 0 0 5vw;
+}
+.total__table {
+  > div {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5em 0;
+  }
+}
+.total__final {
+  border-top: thin solid $main-border-color;
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.2em;
+}
+
+.total__button {
+  display: block;
+  width: 100%;
+  color: $main-color;
+  margin: 1em 0;
+  border: 0.2em solid $main-color;
+  border-radius: 0.4em;
+  padding: 1em 0.5em;
+}
+.total__button:hover,
+.total__button_main {
+  color: white;
+  background: $main-color;
+}
+</style>
