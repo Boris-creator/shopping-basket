@@ -21,19 +21,7 @@
           class="main__items__item"
         >
           <div class="cross" @click="deletePos(pos)"></div>
-          <div class="main__items__item__image">
-            <img
-              :src="pos.product.imageSrc"
-              class="main__items__item__image__img"
-            />
-          </div>
-          <div class="main__items__item__data">
-            <h2>{{ pos.product.title }}</h2>
-            <p>{{ pos.product.description }}</p>
-            <p class="main__items__item__data__art">
-              Артикул: {{ pos.product.articul }}
-            </p>
-          </div>
+          <card :product="pos.product"></card>
           <div class="main__items__item__count">
             <!-- Инкремент / декремент можно было выделить в отдельный компонент. -->
             <div class="main__items__item__count__plus">
@@ -98,11 +86,11 @@
 export {};
 import Vue from "vue";
 import { Component, Prop, Watch } from "vue-property-decorator";
-
+import Card from "./product-card.vue";
 import { product, store } from "../types";
 
 type position = { product: product; count: number };
-@Component
+@Component({ components: { Card } })
 export default class Basket extends Vue {
   $store!: store;
   $t!: Function;
@@ -222,25 +210,7 @@ $soft-color: #797b86;
     flex-grow: 1;
   }
 }
-.main__items__item__data {
-  h2,
-  p {
-    padding: 0.5em;
-  }
-}
-.main__items__item__image {
-  width: 10%;
-}
-.main__items__item__image__img {
-  width: 100%;
-  border: thin solid grey;
-}
-.main__items__item__sum {
-  font-weight: bold;
-}
-.main__items__item__data__art {
-  color: $soft-color;
-}
+
 .main__items__item__count {
   display: flex;
   flex-direction: column;
@@ -250,6 +220,9 @@ $soft-color: #797b86;
   border: none;
   margin: 0 1em;
 }
+.main__items__item__sum {
+  font-weight: bold;
+}
 .installation {
   margin: 4vh 0;
 }
@@ -257,7 +230,7 @@ $soft-color: #797b86;
   display: flex;
 }
 .installation__label__tip {
-    margin-left: 2em;
+  margin-left: 2em;
 }
 .total {
   grid-area: total;
