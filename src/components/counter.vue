@@ -3,7 +3,7 @@
     <button class="count__button" @click="change(-1)" :disabled="count_ == 1">
       &minus;
     </button>
-    <span>{{ count }}</span>
+    <span class="count__value">{{ count }}</span>
     <button class="count__button" @click="change(1)">&plus;</button>
   </div>
 </template>
@@ -60,10 +60,15 @@ export default class Counter extends Vue {
     font-size: 2.2em;
   }
 }
+.count__value {
+  min-width: 1.5em;
+  text-align: center;
+}
 .count__button {
   border: none;
   outline: none;
-  margin: 0 1em;
+  margin: 0 0.5em;
   font-size: inherit;
+  user-select: none;
 }
 </style>
