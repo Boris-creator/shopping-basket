@@ -1,23 +1,22 @@
 <template>
-  <div>
-    <div class="page">
-      <div
-        class="page__btn"
-        :class="{ page__btn_disabled: current == 0 }"
-        @click="slideTo(current - 1)"
-      >
-        &#5176;
-      </div>
-      <div class="page__index">
-        <span class="page__index__current">{{ current + 1 }}</span> /
-        {{ items.length }}
-      </div>
-      <div
-        class="page__btn"
-        :class="{ page__btn_disabled: current == items.length - 1 }"
-        @click="slideTo(current + 1)"
-      >
-        &#5171;
+  <div tabindex="0" @keydown="keyHelper" class="wrapper">
+    <div class="head">
+      <h2>{{ title }}</h2>
+      <div class="page">
+        <div
+          class="page__btn page__btn_left"
+          :class="{ page__btn_disabled: current == 0 }"
+          @click="slideTo(current - 1)"
+        ></div>
+        <div class="page__index">
+          <span class="page__index__current">{{ current + 1 }}</span> /
+          {{ items.length }}
+        </div>
+        <div
+          class="page__btn page__btn_right"
+          :class="{ page__btn_disabled: current == items.length - 1 }"
+          @click="slideTo(current + 1)"
+        ></div>
       </div>
     </div>
     <div class="slider" ref="slider">
@@ -39,34 +38,52 @@ import { product } from "../types";
 export default class Slider extends Vue {
   @Prop(Array)
   items!: product[];
+  @Prop(String)
+  title!: string;
+
   current = 0;
   private observer!: IntersectionObserver;
+  private visibleSlides: Set<number> = new Set();
+  private visibleAmount = -1;
   slideTo(i: number) {
     this.current = Math.max(0, Math.min(this.items.length - 1, i));
   }
+  keyHelper(e: KeyboardEvent) {
+    if (e.key == "ArrowRight") {
+      this.slideTo(this.current + 1);
+    }
+    if (e.key == "ArrowLeft") {
+      this.slideTo(this.current - 1);
+    }
+  }
   async mounted() {
     const root = this.$refs.slider as HTMLElement;
+    const visible = this.visibleSlides;
     this.observer = new IntersectionObserver(
       (entries, _) => {
-        const visible = new Set<number>();
         entries.forEach((e) => {
           const currentTarget = [
             ...root.querySelectorAll(".slider__item"),
           ].indexOf(e.target);
           if (e.isIntersecting) {
             visible.add(currentTarget);
+          } else {
+            visible.delete(currentTarget);
           }
-          if (!visible.size) {
-            return;
-          }
-          if (visible.has(this.current)) {
-            return;
-          }
-          this.current = Math.min(...visible);
         });
+        if (this.visibleAmount == -1 && visible.size) {
+          this.visibleAmount = visible.size;
+        }
+        if (visible.size != this.visibleAmount) {
+          return;
+        }
+        if (visible.has(this.current)) {
+          return;
+        }
+        this.current = Math.min(...visible);
       },
       {
-        threshold: 0.9,
+        threshold: 0.7,
         root,
       }
     );
@@ -80,29 +97,45 @@ export default class Slider extends Vue {
   }
   @Watch("current")
   slide(value: number) {
-    const root = this.$refs.slider as HTMLElement;
-    root
-      .querySelectorAll(".slider__item")
-      [value].scrollIntoView({ behavior: "smooth" });
+    const root = this.$refs.slider as HTMLElement,
+      slide = root.querySelectorAll(".slider__item")[value];
+    root.scroll({
+      left:
+        slide.getBoundingClientRect().left +
+        root.scrollLeft -
+        root.getBoundingClientRect().left,
+      behavior: "smooth",
+    });
   }
 }
 </script>
 <style lang="scss" scoped>
+.wrapper {
+  outline: none;
+}
 .slider {
   display: flex;
+  align-items: stretch;
   width: 100%;
   overflow-x: scroll;
 }
 .slider__item {
-  width: 45%; //их надо сделать Уже, но просто их мало, и я хотел показать, как они прокручиваются :)
+  width: 30%;
   padding: 3em;
   flex-shrink: 0;
+  @media (max-width: 768px) {
+    width: 40%;
+  }
 }
 
 .slider__item_active {
   border-bottom: thin solid silver;
 }
-
+.head {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
 .page {
   display: flex;
   align-items: center;
@@ -119,7 +152,22 @@ export default class Slider extends Vue {
   color: white;
   background: #90a2b5;
   cursor: pointer;
-  user-select: none;
+  &:after {
+    content: "";
+    display: block;
+    width: 1em;
+    height: 1em;
+    border-bottom: 0.2em solid white;
+    border-right: 0.2em solid white;
+  }
+}
+.page__btn_left:after {
+  rotate: 135deg;
+  translate: 0.2em 0;
+}
+.page__btn_right:after {
+  rotate: -45deg;
+  translate: -0.2em 0;
 }
 .page__btn_disabled {
   opacity: 0.5;

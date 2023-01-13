@@ -1,20 +1,19 @@
 <template>
   <div id="app">
     <basket></basket>
-    <div>
-      <h2>Просмотренные товары</h2>
-      <slider :items="recent">
+    <div class="b-slider-wrapper">
+      <slider :items="recent" title="Просмотренные товары">
         <template v-slot:item="{ item }">
           <div class="slider-item">
             <img
-              class="slider__item__img"
+              class="slider-item__img"
               :src="'./' + item.imageSrc"
               :alt="item.title"
             />
             <h2>{{ item.title }}</h2>
             <p>{{ item.description }}</p>
             <div>{{ item.price.toLocaleString() }}</div>
-            <a :href="item.url" class="slider__item__a">Подробнее</a>
+            <a :href="item.url" class="slider-item__a">Подробнее</a>
           </div>
         </template>
       </slider>
@@ -29,7 +28,8 @@ import { Component } from "vue-property-decorator";
 import { product, store } from "./types";
 import Basket from "./components/basket.vue";
 import Slider from "./components/slider.vue";
-import { products as list } from "./examples/products";
+import products_list from "./examples/products.json";
+import recent_list from "./examples/recent.json";
 
 @Component({
   components: {
@@ -41,8 +41,8 @@ export default class App extends Vue {
   $store!: store;
   recent: product[] = [];
   mounted() {
-    const products: product[] = list;
-    const recent = [...products]; //это другие товары конечно, просто поленился забивать новые показатели
+    const products: product[] = products_list;
+    const recent: product[] = recent_list;
     this.$store.commit("addGoods", products); //эмулирую добавление в корзину
     recent.forEach((prod) => {
       this.$store.commit("addRecent", prod); //эмулирую добавление в просмотренные товары
@@ -55,11 +55,25 @@ export default class App extends Vue {
 <style scoped lang="scss">
 $main-color: #0069b4;
 
-.slider__item__img {
+#app {
+  width: 70%;
+  margin: 0 auto;
+}
+.b-slider-wrapper {
+  margin-top: 5vh;
+}
+.slider-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  height: 100%;
+}
+.slider-item__img {
   width: 60%;
   border: thin solid;
 }
-.slider__item__a {
+.slider-item__a {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -70,9 +84,10 @@ $main-color: #0069b4;
   background: $main-color;
   color: white;
 }
-.slider__item p,
-.slider__item h2 {
+.slider-item p,
+.slider-item h2 {
   padding: 1em 0;
   margin: 1em 0;
+  line-height: 1.6em;
 }
 </style>

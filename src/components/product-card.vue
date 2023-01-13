@@ -4,8 +4,8 @@
       <img :src="product.imageSrc" class="item__image__img" />
     </div>
     <div class="item__data">
-      <h2>{{ product.title }}</h2>
-      <p>{{ product.description }}</p>
+      <h4>{{ product.title }}</h4>
+      <p class="item__data__descr">{{ product.description }}</p>
       <p class="item__data__art">Артикул: {{ product.articul }}</p>
     </div>
   </div>
@@ -27,12 +27,18 @@ $soft-color: #797b86;
 .item {
   display: flex;
   align-items: center;
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
 }
 .item__data {
   h2,
   p {
     padding: 0.5em;
   }
+}
+.item__data__descr {
+  line-height: 1.6em;
 }
 .item__image {
   width: 20%;

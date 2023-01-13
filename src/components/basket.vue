@@ -2,7 +2,7 @@
   <div class="wrapper">
     <div class="main">
       <div class="main__head">
-        <h1>Ваша корзина</h1>
+        <h1 class="main__head__header">Ваша корзина</h1>
         <div class="main__head__subheader">
           <span>{{ $t("{} товар", positions.length, "first") }}</span>
           <button
@@ -21,16 +21,14 @@
           class="main__items__item"
         >
           <div class="cross" @click="deletePos(pos)"></div>
-          <card :product="pos.product"></card>
+          <div class="main__items__item__card">
+            <card :product="pos.product"></card>
+          </div>
           <div class="main__items__item__count">
-            <!-- Инкремент / декремент можно было выделить в отдельный компонент. -->
-            <div class="main__items__item__count__plus">
-              <button @click="changeCount(pos, -1)" :disabled="pos.count == 1">
-                &minus;
-              </button>
-              <span>{{ pos.count }}</span>
-              <button @click="changeCount(pos, 1)">&plus;</button>
-            </div>
+            <counter
+              @change="changeCount(pos, $event)"
+              :count="pos.count"
+            ></counter>
             <div class="main__items__item__count__tip" v-if="pos.count > 1">
               {{ pos.product.price }} / шт.
             </div>
@@ -67,7 +65,8 @@
         </div>
       </div>
       <div class="total__final">
-        Стоимость товаров <span>{{ sum.toLocaleString() }} р</span>
+        Стоимость товаров
+        <span class="total__final__sum">{{ sum.toLocaleString() }} р</span>
       </div>
       <button
         class="total__button total__button_main"
@@ -87,10 +86,11 @@ export {};
 import Vue from "vue";
 import { Component, Prop, Watch } from "vue-property-decorator";
 import Card from "./product-card.vue";
+import Counter from "./counter.vue";
 import { product, store } from "../types";
 
 type position = { product: product; count: number };
-@Component({ components: { Card } })
+@Component({ components: { Card, Counter } })
 export default class Basket extends Vue {
   $store!: store;
   $t!: Function;
@@ -141,13 +141,10 @@ export default class Basket extends Vue {
   }
   deletePos(pos: position) {
     this.positions.splice(this.positions.indexOf(pos), 1);
-    this.$store.commit("deletePos", pos);
+    this.$store.commit("deleteGood", pos);
   }
-  changeCount(position: position, increment: 1 | -1) {
-    if (position.count == 1 && increment == -1) {
-      return;
-    }
-    position.count += increment;
+  changeCount(position: position, count: number) {
+    position.count = count;
   }
 
   @Watch("goods.length")
@@ -177,10 +174,12 @@ $main-color: #0069b4;
 $soft-color: #797b86;
 @at-root .wrapper {
   display: grid;
-  grid-template-areas:
-    "header header header"
-    "main main total"
-    "slider slider slider";
+  grid-template-areas: "main main total";
+  @media (max-width: 768px) {
+    grid-template-areas:
+      "total"
+      "main";
+  }
 }
 .main {
   grid-area: main;
@@ -188,6 +187,10 @@ $soft-color: #797b86;
 .main__head {
   display: flex;
   align-items: flex-end;
+  margin: 0 0 4vh 0;
+}
+.main__head__header {
+  line-height: 1em;
 }
 .main__head__subheader {
   display: flex;
@@ -195,20 +198,32 @@ $soft-color: #797b86;
   align-items: flex-end;
   flex-grow: 1;
   margin-left: 1em;
+  * {
+    color: $soft-color;
+  }
 }
 .main__head__subheader__btn {
   border: none;
+  border-bottom: 0.1em solid $soft-color;
+  font-size: 1.2em;
+}
+.main__items {
+  max-height: 50vh;
+  overflow-y: scroll;
 }
 .main__items__item {
   display: flex;
   align-items: center;
   margin: 1em 0;
-  padding: 1em;
+  padding: 0.5em 1em;
   position: relative;
-  border: thin solid silver;
+  border-bottom: thin solid silver;
   > div {
     flex-grow: 1;
   }
+}
+.main__items__item__card {
+  width: 50%;
 }
 
 .main__items__item__count {
@@ -216,40 +231,51 @@ $soft-color: #797b86;
   flex-direction: column;
   align-items: center;
 }
-.main__items__item__count__plus button {
-  border: none;
-  margin: 0 1em;
-}
 .main__items__item__sum {
   font-weight: bold;
+  font-size: 1.4em;
 }
 .installation {
-  margin: 4vh 0;
+  margin: 6vh 0;
 }
 .installation__label {
   display: flex;
+  align-items: center;
 }
 .installation__label__tip {
   margin-left: 2em;
+  p {
+    color: $soft-color;
+    margin: 1em 0 0 0;
+  }
 }
 .total {
   grid-area: total;
   margin: 0 0 0 5vw;
+  @media (max-width: 768px) {
+    margin: 0 0 5vh 0;
+  }
 }
 .total__table {
+  margin: 1.2em 0 0 0;
   > div {
     display: flex;
     justify-content: space-between;
-    padding: 0.5em 0;
+    padding: 0.8em 0;
   }
 }
 .total__final {
   border-top: thin solid $main-border-color;
   display: flex;
   justify-content: space-between;
+  align-items: flex-end;
+  font-size: 1.2em;
+  padding: 1rem 0;
+}
+.total__final__sum {
+  font-weight: bold;
   font-size: 1.2em;
 }
-
 .total__button {
   display: block;
   width: 100%;

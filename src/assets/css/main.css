@@ -18,11 +18,11 @@ a {
 }
 .cross {
   position: absolute;
-  width: 1em;
-  height: 1em;
-  top: 1em;
+  width: 1.6em;
+  height: 1.6em;
+  top: 1.6em;
   right: 3%;
-  z-index: 13;
+  z-index: 99;
   cursor: pointer;
 }
 
@@ -30,9 +30,9 @@ a {
 .cross:after {
   content: "";
   position: absolute;
-  right: 5px;
-  height: 13px;
-  width: 1px;
+  right: 100%;
+  height: 5%;
+  width: 100%;
   background-color: black;
 }
 
@@ -42,4 +42,16 @@ a {
 
 .cross:after {
   transform: rotate(-45deg);
+}
+
+input[type="checkbox"] {
+  width: 2em;
+  height: 2em;
+}
+@media (max-width: 768px) {
+  .cross {
+    width: 2.5em;
+    height: 2.5em;
+    top: 2em;
+  }
 }
