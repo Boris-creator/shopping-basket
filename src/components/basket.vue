@@ -174,11 +174,13 @@ $main-color: #0069b4;
 $soft-color: #797b86;
 @at-root .wrapper {
   display: grid;
-  grid-template-areas: "main main total";
+  grid-template-areas: "main total";
+  grid-template-columns: 70% 30%;
   @media (max-width: 768px) {
     grid-template-areas:
       "total"
       "main";
+    grid-template-columns: 100%;
   }
 }
 .main {
@@ -206,10 +208,6 @@ $soft-color: #797b86;
   border: none;
   border-bottom: 0.1em solid $soft-color;
   font-size: 1.2em;
-}
-.main__items {
-  max-height: 50vh;
-  overflow-y: scroll;
 }
 .main__items__item {
   display: flex;
@@ -241,6 +239,7 @@ $soft-color: #797b86;
 .installation__label {
   display: flex;
   align-items: center;
+  cursor: pointer;
 }
 .installation__label__tip {
   margin-left: 2em;
